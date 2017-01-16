@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    style="?styleCaldroidViewLayout"
-    android:orientation="vertical" >
+              style="?styleCaldroidViewLayout"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/calendar_title_view"
@@ -13,15 +13,42 @@
 
         <Button
             android:id="@+id/calendar_left_arrow"
-            style="?styleCaldroidLeftArrow" />
+            style="?styleCaldroidLeftArrow"
+            android:layout_weight="1"/>
 
-        <TextView
-            android:id="@+id/calendar_month_year_textview"
-            style="?styleCaldroidMonthName"/>
+        <!--<TextView-->
+        <!--android:id="@+id/calendar_month_year_textview"-->
+        <!--style="?styleCaldroidMonthName"/>-->
+        <android.support.v4.widget.Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"/>
+
+        <android.support.v7.widget.AppCompatSpinner
+            android:id="@+id/calendar_month_spinner"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/spinner_background"/>
+
+        <android.support.v7.widget.AppCompatSpinner
+            android:id="@+id/calendar_year_spinner"
+            android:layout_width="wrap_content"
+
+            android:layout_height="40dp"
+            android:layout_weight="1"
+
+            android:background="@drawable/spinner_background"/>
+
+        <android.support.v4.widget.Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"/>
 
         <Button
             android:id="@+id/calendar_right_arrow"
-            style="?styleCaldroidRightArrow" />
+            style="?styleCaldroidRightArrow"
+            android:layout_weight="1"/>
     </LinearLayout>
 
     <GridView
@@ -30,7 +57,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="-10dp"
         android:numColumns="7"
-        android:stretchMode="columnWidth" >
+        android:stretchMode="columnWidth">
     </GridView>
 
     <com.antonyt.infiniteviewpager.InfiniteViewPager

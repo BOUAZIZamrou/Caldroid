@@ -206,9 +206,9 @@ public class CaldroidSampleActivity extends AppCompatActivity {
                 caldroidFragment.refreshView();
 
                 // Move to date
-                // cal = Calendar.getInstance();
-                // cal.add(Calendar.MONTH, 12);
-                // caldroidFragment.moveToDate(cal.getTime());
+                 cal = Calendar.getInstance();
+                 cal.add(Calendar.MONTH, 12);
+                 caldroidFragment.moveToDate(cal.getTime());
 
                 String text = "Today: " + formatter.format(new Date()) + "\n";
                 text += "Min Date: " + formatter.format(minDate) + "\n";

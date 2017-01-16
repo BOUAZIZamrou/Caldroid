@@ -14,6 +14,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.text.format.DateUtils;
 import android.text.format.Time;
+import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,18 +24,21 @@ import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.GridView;
-import android.widget.TextView;
+import android.widget.Spinner;
 
 import com.antonyt.infiniteviewpager.InfinitePagerAdapter;
 import com.antonyt.infiniteviewpager.InfiniteViewPager;
 import com.caldroid.R;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.HashMap;
@@ -44,6 +48,8 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import hirondelle.date4j.DateTime;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * Caldroid is a fragment that display calendar with dates in a month. Caldroid
@@ -78,7 +84,16 @@ import hirondelle.date4j.DateTime;
  */
 
 @SuppressLint("DefaultLocale")
-public class CaldroidFragment extends DialogFragment {
+public class CaldroidFragment extends DialogFragment implements AdapterView.OnItemSelectedListener {
+    /**
+     * Constants for Year Spinner
+     */
+    private final static int YEAR_PREVIOUS_YEARS_COUNT = 5;
+    private final static int YEAR_COMMING_YEARS_COUNT = 99;
+    private static int YEAR_THIS_YEAR = Calendar.getInstance().get(Calendar.YEAR);
+    private static final CharSequence[] YEARS =
+            new CharSequence[YEAR_COMMING_YEARS_COUNT + YEAR_PREVIOUS_YEARS_COUNT + 1];
+
     /**
      * Weekday conventions
      */
@@ -122,7 +137,9 @@ public class CaldroidFragment extends DialogFragment {
      */
     private Button leftArrowButton;
     private Button rightArrowButton;
-    private TextView monthTitleTextView;
+    // private TextView monthTitleTextView;
+    private Spinner mMonthSpinner;
+    private Spinner mYearSpinner;
     private GridView weekdayGridView;
     private InfiniteViewPager dateViewPager;
     private DatePageChangeListener pageChangeListener;
@@ -239,6 +256,7 @@ public class CaldroidFragment extends DialogFragment {
 
     /**
      * Retrieve current month
+     *
      * @return
      */
     public int getMonth() {
@@ -247,6 +265,7 @@ public class CaldroidFragment extends DialogFragment {
 
     /**
      * Retrieve current year
+     *
      * @return
      */
     public int getYear() {
@@ -324,16 +343,16 @@ public class CaldroidFragment extends DialogFragment {
         return rightArrowButton;
     }
 
-    /**
-     * To let client customize month title textview
-     */
-    public TextView getMonthTitleTextView() {
-        return monthTitleTextView;
-    }
-
-    public void setMonthTitleTextView(TextView monthTitleTextView) {
-        this.monthTitleTextView = monthTitleTextView;
-    }
+//    /**
+//     * To let client customize month title textview
+//     */
+//    public TextView getMonthTitleTextView() {
+//        return monthTitleTextView;
+//    }
+//
+//    public void setMonthTitleTextView(TextView monthTitleTextView) {
+//        this.monthTitleTextView = monthTitleTextView;
+//    }
 
     /**
      * Get 4 adapters of the date grid views. Useful to set custom data and
@@ -605,7 +624,7 @@ public class CaldroidFragment extends DialogFragment {
      * @param dateTime
      */
     public void moveToDateTime(DateTime dateTime) {
-
+        Log.d(TAG, "moveToDateTime() called with: dateTime = [" + dateTime + "]");
         DateTime firstOfMonth = new DateTime(year, month, 1, 0, 0, 0, 0);
         DateTime lastOfMonth = firstOfMonth.getEndOfMonth();
 
@@ -614,6 +633,7 @@ public class CaldroidFragment extends DialogFragment {
 
         // Calendar swipe left when dateTime is in the past
         if (dateTime.lt(firstOfMonth)) {
+
             // Get next month of dateTime. When swipe left, month will
             // decrease
             DateTime firstDayNextMonth = dateTime.plus(0, 1, 0, 0, 0, 0, 0,
@@ -665,8 +685,11 @@ public class CaldroidFragment extends DialogFragment {
         if (caldroidListener != null) {
             caldroidListener.onChangeMonth(month, year);
         }
-
+        mYearSpinner.setOnItemSelectedListener(null);
+        mMonthSpinner.setOnItemSelectedListener(null);
         refreshView();
+        mYearSpinner.setOnItemSelectedListener(CaldroidFragment.this);
+        mMonthSpinner.setOnItemSelectedListener(CaldroidFragment.this);
     }
 
     /**
@@ -798,9 +821,10 @@ public class CaldroidFragment extends DialogFragment {
                 .getDateFromString(toDateString, dateFormat);
         setSelectedDates(fromDate, toDate);
     }
-    
+
     /**
      * Select single date
+     *
      * @author Alov Maxim <alovmax@yandex.ru>
      */
     public void setSelectedDate(Date date) {
@@ -810,9 +834,10 @@ public class CaldroidFragment extends DialogFragment {
         DateTime dateTime = CalendarHelper.convertDateToDateTime(date);
         selectedDates.add(dateTime);
     }
-    
+
     /**
      * Clear selection of the specified date
+     *
      * @author Alov Maxim <alovmax@yandex.ru>
      */
     public void clearSelectedDate(Date date) {
@@ -822,9 +847,10 @@ public class CaldroidFragment extends DialogFragment {
         DateTime dateTime = CalendarHelper.convertDateToDateTime(date);
         selectedDates.remove(dateTime);
     }
-    
+
     /**
      * Checks whether the specified date is selected
+     *
      * @author Alov Maxim <alovmax@yandex.ru>
      */
     public boolean isSelectedDate(Date date) {
@@ -1039,11 +1065,33 @@ public class CaldroidFragment extends DialogFragment {
 
         // This is the method used by the platform Calendar app to get a
         // correctly localized month name for display on a wall calendar
-        monthYearStringBuilder.setLength(0);
-        String monthTitle = DateUtils.formatDateRange(getActivity(),
-                monthYearFormatter, millis, millis, MONTH_YEAR_FLAG).toString();
+        //monthYearStringBuilder.setLength(0);
+        //String monthTitle = DateUtils.formatDateRange(getActivity(),
+        //      monthYearFormatter, millis, millis, MONTH_YEAR_FLAG).toString();
 
-        monthTitleTextView.setText(monthTitle.toUpperCase(Locale.getDefault()));
+        // monthTitleTextView.setText(monthTitle.toUpperCase(Locale.getDefault()));
+
+
+        mMonthSpinner.setSelection(month - 1, true);
+        mYearSpinner.setSelection(getYearIndex(year), true);
+
+    }
+
+    /**
+     * returns the index of passed year
+     *
+     * @param year year to be found
+     * @return index of year in spinner otherwise -1
+     */
+    private int getYearIndex(int year) {
+        int index = -1;
+        for (int i = 0; i < YEARS.length; i++) {
+            if (YEARS[i].equals(String.valueOf(year))) {
+                index = i;
+                break;
+            }
+        }
+        return index;
     }
 
     /**
@@ -1257,20 +1305,47 @@ public class CaldroidFragment extends DialogFragment {
         View view = localInflater.inflate(R.layout.calendar_view, container, false);
 
         // For the monthTitleTextView
-        monthTitleTextView = (TextView) view
-                .findViewById(R.id.calendar_month_year_textview);
+//        monthTitleTextView = (TextView) view
+//                .findViewById(R.id.calendar_month_year_textview);
+
+        // For Month Spinner
+        mMonthSpinner = (Spinner) view.findViewById(R.id.calendar_month_spinner);
+        ArrayAdapter<CharSequence> monthsArrayAdapter = ArrayAdapter.createFromResource(
+                getActivity(), R.array.months, R.layout.spinner_item);
+        monthsArrayAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+
+        // Set months adapter
+        mMonthSpinner.setAdapter(monthsArrayAdapter);
+
+
+        // for Years Spinner
+        mYearSpinner = (Spinner) view.findViewById(R.id.calendar_year_spinner);
+        // generate YEARS.
+        for (int i = 0; i < YEAR_COMMING_YEARS_COUNT + YEAR_PREVIOUS_YEARS_COUNT + 1; i++) {
+            YEARS[i] = (String.valueOf(i + YEAR_THIS_YEAR - YEAR_PREVIOUS_YEARS_COUNT));
+        }
+        // create years Adapter
+        ArrayAdapter yearsAdapter;
+        yearsAdapter = new ArrayAdapter<>(getActivity(), R.layout.spinner_item, android.R.id.text1, YEARS);
+        yearsAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        // Set years adapter
+        mYearSpinner.setAdapter(yearsAdapter);
+
 
         // For the left arrow button
         leftArrowButton = (Button) view.findViewById(R.id.calendar_left_arrow);
-        rightArrowButton = (Button) view
-                .findViewById(R.id.calendar_right_arrow);
+        rightArrowButton = (Button) view.findViewById(R.id.calendar_right_arrow);
 
         // Navigate to previous month when user click
         leftArrowButton.setOnClickListener(new OnClickListener() {
 
             @Override
             public void onClick(View v) {
+                mYearSpinner.setOnItemSelectedListener(null);
+                mMonthSpinner.setOnItemSelectedListener(null);
                 prevMonth();
+                mYearSpinner.setOnItemSelectedListener(CaldroidFragment.this);
+                mMonthSpinner.setOnItemSelectedListener(CaldroidFragment.this);
             }
         });
 
@@ -1279,7 +1354,11 @@ public class CaldroidFragment extends DialogFragment {
 
             @Override
             public void onClick(View v) {
+                mYearSpinner.setOnItemSelectedListener(null);
+                mMonthSpinner.setOnItemSelectedListener(null);
                 nextMonth();
+                mYearSpinner.setOnItemSelectedListener(CaldroidFragment.this);
+                mMonthSpinner.setOnItemSelectedListener(CaldroidFragment.this);
             }
         });
 
@@ -1297,21 +1376,26 @@ public class CaldroidFragment extends DialogFragment {
         // Refresh view
         refreshView();
 
+// todo amr
+        // mYearSpinner.setOnItemSelectedListener(this);
+//        mMonthSpinner.setOnItemSelectedListener(this);
         return view;
     }
 
-	@Override
-	public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-		super.onViewCreated(view, savedInstanceState);
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-		// Inform client that all views are created and not null
-		// Client should perform customization for buttons and textviews here
-		if (caldroidListener != null) {
-			caldroidListener.onCaldroidViewCreated();
-		}
-	}
+        // Inform client that all views are created and not null
+        // Client should perform customization for buttons and textviews here
+        if (caldroidListener != null) {
+            caldroidListener.onCaldroidViewCreated();
+        }
+        mYearSpinner.setOnItemSelectedListener(this);
+        mMonthSpinner.setOnItemSelectedListener(this);
+    }
 
-	/**
+    /**
      * This method can be used to provide different gridview.
      *
      * @return
@@ -1438,6 +1522,57 @@ public class CaldroidFragment extends DialogFragment {
         }
 
         return list;
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
+        int localMonth = month;
+        int localYear =year;
+        Log.d(TAG, "onItemSelected() called with: parent = [" + parent + "], v = [" + v + "], position = [" + position + "], id = [" + id + "]");
+        if (month == -1 || year == -1) {
+            return; // month is not yet initialized.
+        }
+        Log.d(TAG, "onItemSelected: month and year != -1");
+
+        if (parent.getId() == R.id.calendar_month_spinner) {
+            Log.d(TAG, "onItemSelected() month = [" + month + "]");
+            if (month == position + 1) {
+                return; // nothing to change here
+            }
+            localMonth = position + 1;  // set the month the selected month
+            Log.d(TAG, "onItemSelected()  new month = [" + localMonth + "]");
+            //mMonthSpinner.setSelection(position);
+
+
+        } else if (parent.getId() == R.id.calendar_year_spinner) {
+            Log.d(TAG, "onItemSelected() year = [" + year + "]");
+            localYear = Integer.valueOf(YEARS[position].toString());
+            if (year == localYear) {
+                return; // nothing to change here.
+            }
+
+            Log.d(TAG, "onItemSelected: selected year is " + localYear);
+
+        } else {
+            return; // nothing to do here.
+        }
+
+        Log.d(TAG, "onItemSelected: setting Calendar Date view");
+        mYearSpinner.setOnItemSelectedListener(null);
+        mMonthSpinner.setOnItemSelectedListener(null);
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, localYear);
+        calendar.set(Calendar.MONTH, localMonth - 1);
+        Log.d(TAG, "onItemSelected() calendar = [" + calendar.getTime().toString() + "]");
+        moveToDate(calendar.getTime());
+        mYearSpinner.setOnItemSelectedListener(CaldroidFragment.this);
+        mMonthSpinner.setOnItemSelectedListener(CaldroidFragment.this);
+
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> view) {
+
     }
 
     /**

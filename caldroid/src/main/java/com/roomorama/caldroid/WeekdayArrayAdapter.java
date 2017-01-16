@@ -2,6 +2,7 @@ package com.roomorama.caldroid;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.support.annotation.NonNull;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -37,10 +38,14 @@ public class WeekdayArrayAdapter extends ArrayAdapter<String> {
         return false;
     }
 
+    @NonNull
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, @NonNull ViewGroup parent) {
         // To customize text size and color
-        TextView textView = (TextView) localInflater.inflate(R.layout.weekday_textview, null);
+        TextView textView = (TextView) convertView;
+        if (textView == null) {
+            textView = (TextView) localInflater.inflate(R.layout.weekday_textview, null,false);
+        }
 
         // Set content
         String item = getItem(position);
